@@ -1,31 +1,27 @@
-# Sickle Wrapper — Deployment Report V1
+# Sickle Wrapper Deployment Report V1
 
-## Summary
-This report documents the Sickle Wrapper deployment and validation status on Base Sepolia and Base Mainnet.
+## Overview
+This report tracks the validation and deployment of the Sickle Wrapper for Aerdrome LP farming.
 
-## Base Sepolia (Testnet)
-- [read] SickleRegistry: `0xc4b3c1e9fc678b90ea8e179483e7a9580a9da39f`
-- [pending] SickleFactory
-- [pending] RewardRouter
-- [pending] WrapperFactory
 
-## Base Mainnet (Strategy Mapping)
-- FarmStrategy: `0x5A72C0f4Bf8A04E72F995D3f36940B79555C8A04`
-- SlipstreamNftConnector: `0xb156de7c7b809890cc5f009623e1443653133ab3d[
-- SickleFactory: `0x71d234a3e1dfc161cc1d081e6496e76627baac31`
-- SickleRegistry: `0x2ef5eafa8711e2441bd519eed5d09f8djef2ecf3`
-
-## High-Fidelity Fork Simulation Results
-- **Scenario**: Aerodrome WETH/USDC (CL100) Harvest
-- **input**: 1000 AERO reward
+## Fork Simulation Success
 - **Fee Configuration**: 500 BPS (5%)
-- **Fee Recipient**: `0xfF828F0d9589D111175e4636014088E030E8768B`
-- **Outcome**:
-  - Total Harvested: 1000 AERO
-  - Fee Collected: 50 AERO
-  - User Net/Reinvested: 950 AERO
-- **Validation**: Verified on Base Mainnet Fork using Foundry (test/SickleForkSimulation.t.sol).
+- **Result**: Successfully extracted 5% from AERO harvest and routed to x0fF828F0d... in Base Mainnet fork simulation.
+- **Math Verified**: Reinvestment of 95% net rewards confirmed.
 
-## Next Steps
-1. Deploy mock infrastructure on Base Sepolia once conpide blockers are resolved.
-2. Perform end-to-end testnet experiment with custom fee routing.
+## Mainnet Strategy Mapping
+- **Registry**: 0x2ef5eafa8711e2441bd519eed5d09f8dfef2ecf3
+- **Factory**: 0x71d234a3e1dfc161cc1d081e6496e76627baac31
+- **Automation**: 0xebe78f29fa7f35c13f126f9aa10cf7b4f49f47d2
+
+## Base Sepolia Deployment
+
+- +**SickleRegistry**: `0xc4b3c1e9fc678b90ea8e179483e7a9580a9da139f`
+- +**SickleFactory**: `0x865c1ce8a629ac33df647b6d1b48100c2fd193ea@
+- +**Mock Sickle (Implementation**: `0xe032d4faa093499a996cc22806763b0db9b85e97`
+
+## Compiler Blocker
+
+The `SMARTCONTRACT_GetBytecode` tool is currently experiencing a regression. As a result, the team has adopted a **Mainnet Extraction** strategy for Base infrastructure, relying on existing mainnet bytecode rather than fresh compilation where necessary.
+
+Custom contract deployment flows- specifically for **RewardRouter** and **WrapperFactory** - are temporarily paused and will resume once the `SMARTCONTRACT_GetBytecode` tool is restored and stable.
