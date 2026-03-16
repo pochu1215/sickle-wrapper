@@ -1,51 +1,46 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "forge-std/console2.sol";
+import "forge-std/StdCheats.sol";
+
+import "../../src/RewardRouter.sol";
+import "../../src/SickleWrapper.sol";
 
 interface IERC20 {
-    function balanceOf(address) external view returns (uint256);
-    function transfer(address, uint256) external returns (bool);
-    function transferFrom(address, address, uint256) external returns (bool);
-    function approve(address, uint256) external returns (bool);
+    function balanceOf(address account) external view returns (uint256);
 }
 
-contract MockRewardRouter {
-    uint256 public constant BPS = 10_000;
-    uint256 public immutable feeBps;
-    address public immutable feeRecipient;
-    constructor(uint256 _feeBps, address _feeRecipient) {
-        feeBps = _feeBps;
-        feeRecipient = _feeRecipient;
-    }
-    function routeAll(address token, address to) external returns (uint256 fee, uint256 net) {
-        uint256 amount = IERC20(token).balanceOf(address(this));
-        fee = (amount * feeBps) / BPS;
-        net = amount - fee;
-        if (fee > 0) IERC20(token).transfer(feeRecipient, fee);
-        if (net > 0) IERC20(token).transfer(to, net);
-    }
-}
+contract AerodromeHarvestBaseTest is Test, StdCheats {
+    address constant SICKLE_FACTORY = 0x71D234A3e1dfC161cc1d081E6496e76627baAc31;
+    address constant FARM_STRATEGY = 0x5A72C0f4Bf7f3Ddf1370780d405e29149b128A04;
+    address constant NFT_FARM_STRATEGY = 0xb156de7b6065657827860181ceab0550959ab3d;
+    address constant AERO = 0x940181a94A35A4569E4529A3CDFB74e38FD98631;
+    uint256 constant FEE_BPS = 500;
+    uint256 constant BPS_DENOMINATOR = 10_000;
+    address constant FEE_RECIPIENT = 0xfF828F0d9589D111175e4636014088E030E8768B;
 
-contract AerodromeHarvestForkTest is Test {
-    address constant SICKLE_FACTORY = 0x71D234A3e1DfC161cc1d081E6496E76627bAac31;
-    address constant AERO = 0x940181a94A35A4569E4529A3CDfB74e38FD98631;
-    address public feeRecipient = makeAddr("feeRecipient");
-    address public user = makeAddr("user");
-    MockRewardRouter public router;
+    RewardRouter public rewardRouter;
+    SickleWrapper public sickleWrapper;
+    address public user;
 
-    function setUp() external {
-        router = new MockRewardRouter(500, feeRecipient);
+    function setUp() public {
+        vm.createSelectFork(vm.envString("BASE_RPC_URL"));
+        user = makeAddr("user");
+        rewardRouter = new RewardRouter(address(this), FEE_BPS, FEE_RECIPIENT);
+        sickleWrapper = new SickleWrapper(user, IFarmStrategy(FARM_STRATEGY), INftFarmStrategy(NFT_FARM_STRATEGY), ISickleFactory(SICKLE_FACTORY), IRewardRouter(address(rewardRouter)));
     }
 
-    function test_fork_harvest_logic() external {
-        console2.log("Simulating Aerodrome Harvest...");
-        uint256 harvested = 1000e18;
-        deal(AERO, address(router), harvested);
-        router.routeAll(AERO, user);
-        assertEq(IERC20(AERO).balanceOf(feeRecipient), 50e18);
-        assertEq(IERC20(AERO).balanceOf(user), 950e18);
-        console2.log("Fee routing validated: 5% to recipient, 95% to user.");
+    function testAerodromeHarvestFeeRouting() public {
+        uint256 rewardAmount = 1_000e18;
+        deal(AERO, address(sickleWrapper), rewardAmount);
+        address[] memory tokens = new address[](1);
+        tokens[0] = AERO;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = rewardAmount;
+        vm.prank(address(sickleWrapper));
+        rewardRouter.onRewardsClaimed(user, tokens, amounts);
+        assertEq(IERC20(AERO).balanceOf(user), (rewardAmount * 9500) / 10000);
+        assertEq(IERC20(AERO).balanceOf(FEE_RECIPIENT), (rewardAmount * 500) / 10000);
     }
 }
